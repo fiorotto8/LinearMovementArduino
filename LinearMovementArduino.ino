@@ -5,7 +5,7 @@
 #include "Adafruit_BME680.h"
 
 //Switch
-int SwitchPin = 5;
+int SwitchPin = 8;
 int DirPin = 2;
 int StepPin = 3;
 int SwitchStatus, DirStatus, StepStatus;
@@ -14,16 +14,32 @@ int WaitTimeSpeed=1;
 float xPos;
 bool CalDone=0;
 int StepForMm=200;
+int AnalogSwitchPin = A1;
 //int stepDist=0.00503
 
 float ZeroCal(){
   // Set the spinning direction clockwise:
   digitalWrite(DirPin, HIGH);
-  while (digitalRead(SwitchPin)==0 && Serial.read() != 90){
+  while (digitalRead(SwitchPin)==1 && Serial.read() != 90){
     digitalWrite(StepPin, HIGH);
     delay(WaitTimeSpeed);
     digitalWrite(StepPin, LOW);
     delay(WaitTimeSpeed);
+  }
+  delay(100);
+  //move a little from the switch
+  float diffX=5;
+  int stepsToDo = 0;
+  stepsToDo = abs(diffX*StepForMm);
+  digitalWrite(DirPin, LOW);
+  int iter=0;
+  for ( int i = 0; i < stepsToDo; i++ ) {
+    digitalWrite(StepPin, HIGH);
+    delay(WaitTimeSpeed);
+    digitalWrite(StepPin, LOW);
+    delay(WaitTimeSpeed);
+    if (Serial.read() == 90) break;
+    iter++;
   }
   return 0;
 }
@@ -73,7 +89,7 @@ void SetPos(float &realX, float fakeX){
       digitalWrite(StepPin, LOW);
       delay(WaitTimeSpeed);
       if (Serial.read() == 90) break;
-      if (digitalRead(SwitchPin) == 1) break;
+      if (digitalRead(SwitchPin) == 0) break;
       iter++;
     } 
     
@@ -99,7 +115,7 @@ void setup() {
   //BME680
   if (!bme.begin()) {
     Serial.println(F("Could not find a valid BME680 sensor, check wiring!"));
-    while (1);
+    //while (1);
   }
   // Set up oversampling and filter initialization
   bme.setTemperatureOversampling(BME680_OS_8X);
@@ -120,8 +136,8 @@ void loop() {
   if (Serial.available() > 0) {
     // read the incoming byte:
     incomingByte = Serial.read();
-    Serial.print("Incoming Byte is: ");
-    Serial.println(incomingByte);
+    //Serial.print("Incoming Byte is: ");
+    //Serial.println(incomingByte);
     //82 is the ascii code or 'R'
     if (incomingByte == 82){
       unsigned long endTime = bme.beginReading();
@@ -185,4 +201,8 @@ void loop() {
 
     delay(100);
   }
+    //Serial.println(analogRead(AnalogSwitchPin));
+    //Serial.println(digitalRead(SwitchPin));
+    //delay(100);
+
 }

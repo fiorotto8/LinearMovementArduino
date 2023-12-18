@@ -14,7 +14,7 @@ Send a byte through serial port to Arduino
 ## TPH sensor
 
 The sensor is a BME 680 that measure Temperature, pressure, humidity and VOC (volatile organic compounds).
-Arduino talks to it via I2C. the sensor requires +5V and GROUND. SDA and SCL are respectively connected to A4 and A5 analog input.
+Arduino talks to it via I2C. the sensor requires +5V and GROUND. **SDA and SCL are respectively connected to A4 and A5 analog input.**
 
 ## Moving stage
 

@@ -149,6 +149,8 @@ void loop() {
         Serial.println(F("Failed to complete reading :("));
         return;
       }
+      Serial.print("KEG");
+      Serial.print(";");
       Serial.print(bme.temperature+273.15);
       Serial.print(";");
       Serial.print(bme.pressure);

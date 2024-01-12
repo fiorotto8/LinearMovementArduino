@@ -10,6 +10,9 @@ Send a byte through serial port to Arduino
 - **G**: Get the position of the stage with respect to the *zero*. Possible only after calibration
 - **C**: do the calibration and stays to the *zero* position
 - **P**: Set the position in mm from the *zero*. After that a prompt will ask you the position in mm. Not working without calibration. It is not possible to go to *zero* with this function, use the calibration procedure.
+- **Z**: To send during any movement to stop it prematurely
+- **W**: To return the detector where the Arduino is connected (KEG or MANGOlino)
+- **Y**: Return if the calibration has already been done
 
 ## TPH sensor
 

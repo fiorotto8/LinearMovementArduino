@@ -56,32 +56,26 @@ void SetPos(float &realX, float fakeX){
     return 1;
   }
   else{
-
     //Serial.print("Initial position is:");
     //Serial.println(realX);
     //Serial.print("Final position is:");
     //Serial.println(fakeX);
-
     float diffX;
     int stepsToDo = 0;
-
     diffX = fakeX - realX;
     //Serial.println(diffX);
     if (fakeX > 140 || fakeX < 0){
-      Serial.println("Impossible movement"); 
+      Serial.println("Impossible movement");
       return 1;
     }
-    
     if ( diffX < 0) digitalWrite(DirPin, HIGH);
     else if ( diffX > 0) digitalWrite(DirPin, LOW);
     else if (diffX == 0 ) {
       Serial.println("Already in position");
       return 1;
     }
-
     stepsToDo = abs(diffX*StepForMm);
     Serial.println(stepsToDo);
-
     int iter=0;
     for ( int i = 0; i < stepsToDo; i++ ) {
       digitalWrite(StepPin, HIGH);
@@ -91,8 +85,7 @@ void SetPos(float &realX, float fakeX){
       if (Serial.read() == 90) break;
       if (digitalRead(SwitchPin) == 0) break;
       iter++;
-    } 
-    
+    }
     float temp=realX;
     float nvm =((float)iter/(float)StepForMm);
     if ( diffX < 0) temp = temp - nvm;
@@ -100,7 +93,6 @@ void SetPos(float &realX, float fakeX){
     realX=temp;
   }
 }
-
 //BME SENSOR
 Adafruit_BME680 bme; // I2C
 int incomingByte = 0; // for incoming serial data
@@ -131,26 +123,24 @@ void loop() {
   //SwitchStatus = digitalRead(SwitchPin);   // read the input pin
   //Serial.println(SwitchStatus);
   //delay(100);
-
   //BME680
   if (Serial.available() > 0) {
     // read the incoming byte:
     incomingByte = Serial.read();
     //Serial.print("Incoming Byte is: ");
     //Serial.println(incomingByte);
-    //82 is the ascii code or 'R'
+
+    //Read BME sensor (R)
     if (incomingByte == 82){
       unsigned long endTime = bme.beginReading();
-       if (endTime == 0) {
-         Serial.println(F("Failed to begin reading :("));
-         return;
-       }
+      if (endTime == 0) {
+        Serial.println(F("Failed to begin reading :("));
+        return;
+      }
       if (!bme.endReading()) {
         Serial.println(F("Failed to complete reading :("));
         return;
       }
-      Serial.print("KEG");
-      Serial.print(";");
       Serial.print(bme.temperature+273.15);
       Serial.print(";");
       Serial.print(bme.pressure);
@@ -159,32 +149,27 @@ void loop() {
       Serial.print(";");
       Serial.println(bme.gas_resistance);
     }
-    //CALIBRATION
+    //CALIBRATION (C)
     if (incomingByte == 67){
       xPos=ZeroCal();
       CalDone=1;
+      Serial.println("Calibration Done!");
     }
-    //Position check
+    //Position check (G)
     if (incomingByte == 71){
       Serial.print("Current position: ");
       Serial.println(getXPos());
     }
-    //Movement
-    /*
-    if (incomingByte == 80){
-      int pos=0;
-      Serial.println("Write hole number");
-      while( pos == 0){
-        Serial.print("Var are: ");
-        Serial.println(Serial.available() && pos == 0);
-        pos=Serial.readString().toInt();
-      }
-      Serial.print("Selected Position is: ");
-      Serial.println(pos);
-      //send position fucntion
+    //Ask if the calibation has been done (Y)
+    if (incomingByte == 89){
+      Serial.print("Calibration: ");
+      Serial.println(CalDone);
     }
-    */
-    //Movement
+    //Who am I (W)
+    if (incomingByte == 87){
+      Serial.print("KEG");
+    }
+    //Movement (P then number in mm)
     if (incomingByte == 80){
       float pos=0;
       Serial.println("Write position");
@@ -200,11 +185,9 @@ void loop() {
       Serial.println(xPos);
       //send position fucntion
     }
-
     delay(100);
   }
     //Serial.println(analogRead(AnalogSwitchPin));
     //Serial.println(digitalRead(SwitchPin));
     //delay(100);
-
 }

@@ -10,6 +10,7 @@ void(* Reset)(void) = 0;
 int SwitchPin = 8; // Pin connected to the switch
 int DirPin = 2;    // Direction control pin for stepper motor
 int StepPin = 3;   // Step control pin for stepper motor
+int enablePin = 5;    // ENABLE pin
 
 // Variables to store the status of the switch and motor direction and step
 int SwitchStatus, DirStatus, StepStatus;
@@ -114,6 +115,7 @@ void setup() {
   pinMode(SwitchPin, INPUT);
   pinMode(DirPin, OUTPUT);
   pinMode(StepPin, OUTPUT);
+  pinMode(enablePin, OUTPUT);
 
   // Initialize BME680 sensor
   if (!bme.begin()) {
@@ -127,6 +129,9 @@ void setup() {
   bme.setPressureOversampling(BME680_OS_4X);
   bme.setIIRFilterSize(BME680_FILTER_SIZE_3);
   bme.setGasHeater(320, 150); // Set heater temperature and duration
+
+  // INITIALLY disable the driver
+  digitalWrite(enablePin, HIGH);
 }
 
 // Main loop function, runs repeatedly
@@ -170,10 +175,16 @@ void loop() {
 
     // Handle calibration
     if (incomingByte == 67) { // 'C' command
+      // Initially enable the driver
+      digitalWrite(enablePin, LOW);
+      delay(10);
       Serial.println("Calibrating...");
       xPos = ZeroCal();
       CalDone = 1;
       Serial.println("Calibration Done!");
+      // Disable the driver
+      digitalWrite(enablePin, HIGH);
+      delay(10);
     }
 
     // Position check
@@ -193,6 +204,12 @@ void loop() {
       Serial.println("KEG");
     }
 
+    // Get the ENABLE PIN status
+    if (incomingByte == 69) { // 'E' command
+      Serial.print("Enable Pin status: ");
+      Serial.println(digitalRead(enablePin));
+    }
+
     // Movement command
     if (incomingByte == 80) { // 'P' command
       if (CalDone == 0) {
@@ -200,6 +217,9 @@ void loop() {
         return;
       }
       else{
+        // Initially enable the driver
+        digitalWrite(enablePin, LOW);
+        delay(10);
         float pos = 0;
         Serial.println("Write position");
         // Wait for a valid position input
@@ -214,6 +234,9 @@ void loop() {
         SetPos(xPos, pos); // Move to the specified position
         Serial.print("Actual Position in Mm is: ");
         Serial.println(xPos);
+        // Disable the driver
+        digitalWrite(enablePin, HIGH);
+        delay(10);
       }
       // Add a small delay for stability
       delay(100);

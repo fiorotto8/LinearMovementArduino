@@ -40,7 +40,7 @@ float ZeroCal() {
   delay(100);
 
   // Move motor away from the switch to a specified offset
-  float diffX = 5; // Offset distance in mm
+  float diffX = 4; // Offset distance in mm
   int stepsToDo = abs(diffX * StepForMm); // Convert offset to steps
   digitalWrite(DirPin, LOW); // Change direction
   for (int i = 0; i < stepsToDo; i++) {
@@ -65,8 +65,12 @@ void SetPos(float &realX, float fakeX) {
   diffX = fakeX - realX; // Calculate the difference in position
 
   // Check for boundary conditions
-  if (fakeX > 140 || fakeX < 0) {
+  if (fakeX > 110 || fakeX < 0) {
     Serial.println("Impossible movement");
+    return;
+  }
+  else (fakeX == 0){
+    Serial.println("To go to 0 position use Cal function instead")
     return;
   }
 

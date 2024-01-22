@@ -13,6 +13,7 @@ Send a byte through serial port to Arduino
 - **Z**: To send during any movement to stop it prematurely
 - **W**: To return the detector where the Arduino is connected (KEG or MANGOlino)
 - **Y**: Return if the calibration has already been done
+- **K**: Reset the Arduino, equivalent to click the reset button
 
 ## TPH sensor
 

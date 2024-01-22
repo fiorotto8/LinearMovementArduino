@@ -1,8 +1,10 @@
-#include <Ethernet.h>
 #include <Wire.h>
 #include <SPI.h>
 #include <Adafruit_Sensor.h>
 #include "Adafruit_BME680.h"
+
+//Function to software reset
+void(* Reset)(void) = 0;
 
 // Pin definitions for the stepper motor and switch
 int SwitchPin = 8; // Pin connected to the switch
@@ -26,7 +28,7 @@ int AnalogSwitchPin = A1;
 float ZeroCal() {
   // Set the spinning direction clockwise
   digitalWrite(DirPin, HIGH);
-  
+
   // Move motor until the switch is activated or a 'Z' (ASCII 90) is received on Serial
   while (digitalRead(SwitchPin) == 1 && Serial.read() != 90) {
     digitalWrite(StepPin, HIGH);
@@ -57,49 +59,47 @@ float getXPos() {
 
 // Function to move the motor to a specified position
 void SetPos(float &realX, float fakeX) {
-  if (CalDone == 0) {
-    Serial.println("Calibration not done!");
+  float diffX; // Difference between current and target position
+  int stepsToDo = 0; // Number of steps to move
+  diffX = fakeX - realX; // Calculate the difference in position
+
+  // Check for boundary conditions
+  if (fakeX > 140 || fakeX < 0) {
+    Serial.println("Impossible movement");
     return;
-  } else {
-    float diffX; // Difference between current and target position
-    int stepsToDo = 0; // Number of steps to move
-    diffX = fakeX - realX; // Calculate the difference in position
-
-    // Check for boundary conditions
-    if (fakeX > 140 || fakeX < 0) {
-      Serial.println("Impossible movement");
-      return;
-    }
-
-    // Set motor direction based on the position difference
-    if (diffX < 0) digitalWrite(DirPin, HIGH);
-    else if (diffX > 0) digitalWrite(DirPin, LOW);
-    else if (diffX == 0) {
-      Serial.println("Already in position");
-      return;
-    }
-
-    stepsToDo = abs(diffX * StepForMm); // Convert position difference to steps
-    Serial.println(stepsToDo);
-
-    // Move the motor the calculated number of steps
-    for (int i = 0; i < stepsToDo; i++) {
-      digitalWrite(StepPin, HIGH);
-      delay(WaitTimeSpeed);
-      digitalWrite(StepPin, LOW);
-      delay(WaitTimeSpeed);
-      if (Serial.read() == 90) break; // Stop if 'Z' is received
-      if (digitalRead(SwitchPin) == 0) break; // Stop if switch is activated
-    }
-
-    // Update the real position of the motor
-    float temp = realX;
-    float nvm = ((float)iter / (float)StepForMm);
-    if (diffX < 0) temp = temp - nvm;
-    else if (diffX > 0) temp = temp + nvm;
-    realX = temp;
   }
+
+  // Set motor direction based on the position difference
+  if (diffX < 0) digitalWrite(DirPin, HIGH);
+  else if (diffX > 0) digitalWrite(DirPin, LOW);
+  else if (diffX == 0) {
+    Serial.println("Already in position");
+    return;
+  }
+
+  stepsToDo = abs(diffX * StepForMm); // Convert position difference to steps
+  //Serial.println(stepsToDo);
+
+  // Move the motor the calculated number of steps
+  int iter = 0;
+  for (int i = 0; i < stepsToDo; i++) {
+    digitalWrite(StepPin, HIGH);
+    delay(WaitTimeSpeed);
+    digitalWrite(StepPin, LOW);
+    delay(WaitTimeSpeed);
+    if (Serial.read() == 90) break; // Stop if 'Z' is received
+    if (digitalRead(SwitchPin) == 0) break; // Stop if switch is activated
+    iter++;
+  }
+
+  // Update the real position of the motor
+  float temp = realX;
+  float nvm = ((float)iter / (float)StepForMm);
+  if (diffX < 0) temp = temp - nvm;
+  else if (diffX > 0) temp = temp + nvm;
+  realX = temp;
 }
+
 
 // Initialization of BME680 sensor
 Adafruit_BME680 bme; // I2C
@@ -135,6 +135,18 @@ void loop() {
   if (Serial.available() > 0) {
     incomingByte = Serial.read(); // Read the incoming byte
 
+    // Uncomment for degub about message received
+    Serial.print("Command received is: ");
+    Serial.println(incomingByte);
+    delay(100);
+
+    //Software reset the board
+    if (incomingByte == 75) { // 'K' command
+      Serial.println("Resetting Arduinio...");
+      delay(100);
+      Reset();
+    }    
+
     // Handle BME sensor reading
     if (incomingByte == 82) { // 'R' command
       unsigned long endTime = bme.beginReading();
@@ -158,6 +170,7 @@ void loop() {
 
     // Handle calibration
     if (incomingByte == 67) { // 'C' command
+      Serial.println("Calibrating...");
       xPos = ZeroCal();
       CalDone = 1;
       Serial.println("Calibration Done!");
@@ -177,32 +190,40 @@ void loop() {
 
     // Identify device
     if (incomingByte == 87) { // 'W' command
-      Serial.print("KEG");
+      Serial.println("KEG");
     }
 
     // Movement command
     if (incomingByte == 80) { // 'P' command
-      float pos = 0;
-      Serial.println("Write position");
-      // Wait for a valid position input
-      while (pos == 0) {
-        pos = Serial.readString().toFloat();
+      if (CalDone == 0) {
+        Serial.println("Calibration not done, I will not move!");
+        return;
       }
-      Serial.print("Selected Position mm should be: ");
-      Serial.println(pos);
-      Serial.print("Initial position in mm is: ");
-      Serial.println(xPos);
-      SetPos(xPos, pos); // Move to the specified position
-      Serial.print("Actual Position in Mm is: ");
-      Serial.println(xPos);
+      else{
+        float pos = 0;
+        Serial.println("Write position");
+        // Wait for a valid position input
+        while (pos == 0) {
+          pos = Serial.readString().toFloat();
+        }
+        Serial.print("Selected Position mm should be: ");
+        Serial.println(pos);
+        Serial.print("Initial position in mm is: ");
+        Serial.println(xPos);
+        Serial.println("Moving...");
+        SetPos(xPos, pos); // Move to the specified position
+        Serial.print("Actual Position in Mm is: ");
+        Serial.println(xPos);
+      }
+      // Add a small delay for stability
+      delay(100);
     }
-
-    // Add a small delay for stability
-    delay(100);
   }
 
-  // Uncomment for additional debug information
+  // Uncomment for degub about the Switch
   //Serial.println(analogRead(AnalogSwitchPin));
   //Serial.println(digitalRead(SwitchPin));
   //delay(100);
+
+
 }

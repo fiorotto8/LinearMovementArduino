@@ -14,6 +14,7 @@ Send a byte through serial port to Arduino
 - **W**: To return the detector where the Arduino is connected (KEG or MANGOlino)
 - **Y**: Return if the calibration has already been done
 - **K**: Reset the Arduino, equivalent to click the reset button
+- **E**: Get the status of the ENABLE pin (should be 1 when it is OFF i.e. almost everytime)
 
 ## TPH sensor
 

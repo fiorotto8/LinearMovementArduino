@@ -15,15 +15,26 @@ Send a byte through serial port to Arduino
 - **Y**: Return if the calibration has already been done
 - **K**: Reset the Arduino, equivalent to click the reset button
 - **E**: Get the status of the ENABLE pin (should be 1 when it is OFF i.e. almost everytime)
+- **T**: Excite the Relays to connect the Motor power supply to the 220V
+- **U**: Dexcite the Relays to disconnect the Motor power supply to the 220V
+- **S**: Get Relays status
 
 ## TPH sensor
 
 The sensor is a BME 680 that measure Temperature, pressure, humidity and VOC (volatile organic compounds).
 Arduino talks to it via I2C. the sensor requires +5V and GROUND. **SDA and SCL are respectively connected to A4 and A5 analog input.**
+| Wire Name      | Pin On Arduino
+| :---:        |    :----:   |
+| VCC      | Anywhere 5V       |
+| GND   | Anywhere GND        |
+| SDA   | A4        |
+| SCL   | A5        |
 
 ## Moving stage
 
-The stage is moving via a bipolar stepper motor. A switch on one edge of the guide is used to get the *zero* position via calibration procedure. The motor driver A4988 should be connected both to 5V and the 24V DC power supply.
+The stage is moving via a bipolar stepper motor. A switch on one edge of the guide is used to get the *zero* position via calibration procedure.
+The Switch is read by A1 analog Pin and it triggers when the reading is less than 500.
+The motor driver A4988 should be connected both to 5V and the 24V DC power supply.
 
 Here the mapping of the cable from the motor to the controller.
 | Name on A4988      | Other name | Color of the wire     |
@@ -34,7 +45,9 @@ Here the mapping of the cable from the motor to the controller.
 | 2B   | B+        | <span style="color:red">Red</span>      |
 
 Remember to connect in parallel to the 24V a 100$\mu$F capacitor to avoid to burn the controller.
-We selected 470 $\Omega$ for the resistance for the switch.
+We selected 1.7 k$\Omega$ for the resistance for the switch.
+
+A recent feature is the adding of 2 relays that remove the power from the motor power supply to avoid noise to the PMT.
 
 ## Mapping of the 15pin parallel cable for the Vessel feedthroug
 

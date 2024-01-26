@@ -82,7 +82,7 @@ float ZeroCal() {
   delay(100);
 
   // Move motor away from the switch to a specified offset
-  float diffX = 4; // Offset distance in mm
+  float diffX = 3.5; // Offset distance in mm
   int stepsToDo = abs(diffX * StepForMm); // Convert offset to steps
   digitalWrite(DirPin, LOW); // Change direction
   for (int i = 0; i < stepsToDo; i++) {

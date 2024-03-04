@@ -82,7 +82,7 @@ float ZeroCal() {
   delay(100);
 
   // Move motor away from the switch to a specified offset
-  float diffX = 3.5; // Offset distance in mm
+  float diffX = 5.5; // Offset distance in mm
   int stepsToDo = abs(diffX * StepForMm); // Convert offset to steps
   digitalWrite(DirPin, LOW); // Change direction
   for (int i = 0; i < stepsToDo; i++) {
@@ -228,6 +228,7 @@ void loop() {
       Serial.println("Resetting Arduinio...");
       delay(100);
       Reset();
+      Serial.println("PANDA");
     }    
 
     // Handle BME sensor reading
@@ -249,6 +250,7 @@ void loop() {
       Serial.print(bme.humidity);
       Serial.print(";");
       Serial.println(bme.gas_resistance);
+      Serial.println("PANDA");
     }
 
     // Handle calibration
@@ -271,47 +273,55 @@ void loop() {
       //digitalWrite(enablePin, HIGH);
       //delay(2000);
       Serial.println("Calibration Done!");
+      Serial.println("PANDA");
     }
 
     // Position check
     if (incomingByte == 71) { // 'G' command
       Serial.print("Current position: ");
       Serial.println(getXPos());
+      Serial.println("PANDA");
     }
 
     // Realy Status check
     if (incomingByte == 77) { // 'M' command
       Serial.print("Relays excited: ");
       Serial.println(relayStatus);
+      Serial.println("PANDA");
     }
 
     // Check if calibration has been done
     if (incomingByte == 89) { // 'Y' command
       Serial.print("Calibration: ");
       Serial.println(CalDone);
+      Serial.println("PANDA");
     }
 
     // Identify device
     if (incomingByte == 87) { // 'W' command
       Serial.println("KEG");
+      Serial.println("PANDA");
     }
 
     // Get Relays Status
     if (incomingByte == 83) { // 'S' command
       Serial.print("Relays are: ");
       Serial.println(relayStatus);
+      Serial.println("PANDA");
     }
 
-    // Excite realys
+    // Excite relays
     if (incomingByte == 84) { // 'T' command
       Serial.print("Relays excited ");
       Serial.println(relayStatus=ExciteRelays());
+      Serial.println("PANDA");
     }
 
-    // Dexcite realys
+    // Dexcite relays
     if (incomingByte == 85) { // 'U' command
       Serial.print("Relays deexcited ");
       Serial.println(relayStatus=DexciteRelays());
+      Serial.println("PANDA");
     }
 
     // Movement command
@@ -353,6 +363,7 @@ void loop() {
       }
       // Add a small delay for stability
       delay(100);
+      Serial.println("PANDA");
     }
   }
 

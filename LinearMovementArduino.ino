@@ -2,17 +2,20 @@
 #include <SPI.h>
 #include <Adafruit_Sensor.h>
 #include "Adafruit_BME680.h"
+#include <Servo.h>
 
 //Function to software reset
 void(* Reset)(void) = 0;
 
 // Pin definitions for the stepper motor and switch
-int SwitchPin = 4; // Pin connected to the switch
-int DirPin = 2;    // Direction control pin for stepper motor
-int StepPin = 3;   // Step control pin for stepper motor
+const int SwitchPin = 4; // Pin connected to the switch
+const int DirPin = 2;    // Direction control pin for stepper motor
+const int StepPin = 3;   // Step control pin for stepper motor
 //int enablePin = 5;    // ENABLE pin
-int relay1Pin = 10;    // Relay 1 pin
-int relay2Pin = 11;    // Relay 2 pin
+const int relay1Pin = 10;    // Relay 1 pin
+const int relay2Pin = 11;    // Relay 2 pin
+
+Servo myServo;
 
 bool relayStatus;
 
@@ -20,24 +23,24 @@ bool relayStatus;
 int SwitchStatus, DirStatus, StepStatus;
 
 // Stepper motor configuration
-int stepsPerRevolution = 200; // Number of steps per full revolution of motor
-int WaitTimeSpeed = 1;        // Delay time for motor control, in milliseconds
+const int stepsPerRevolution = 200; // Number of steps per full revolution of motor
+const int WaitTimeSpeed = 1;        // Delay time for motor control, in milliseconds
+const int StepForMm = 200;          // Number of steps per millimeter of movement
 float xPos;                   // Current position of the motor
 bool CalDone = 0;             // Flag indicating if calibration is done
-int StepForMm = 200;          // Number of steps per millimeter of movement
 
 
 // Pin for reading analog values from a switch (if used)
-int AnalogSwitchPin = A1;
+const int AnalogSwitchPin = A1;
 
-// Function to excite the relays i.e. powering the AC/DC converter
+// Function to excite the relays i.e. powering ON the AC/DC converter
 bool ExciteRelays(){
   digitalWrite(relay1Pin, LOW);
   digitalWrite(relay2Pin, LOW);
   return true;
 }
 
-// Function to excite the relays i.e. powering the AC/DC converter
+// Function to deexcite the relays i.e. powering OFF the AC/DC converter
 bool DexciteRelays(){
   digitalWrite(relay1Pin, HIGH);
   digitalWrite(relay2Pin, HIGH);
@@ -59,11 +62,19 @@ float ZeroCal() {
     anal_zero = analogRead(AnalogSwitchPin);
     //Serial.println(digi_zero);
     //CSerial.println(anal_zero);
-
-    if (Serial.read() == 90){ // Stop if 'Z' is received
+    int incoming = Serial.read();
+    if (incoming == 90){ // Stop if 'Z' is received
        Serial.println("Z received stopping calibration..."); 
        break;
     }
+      // If we got *some* other character (not -1), ignore it and dump the buffer
+    else if (incoming != -1) {
+      // Dump any extra characters waiting in the buffer
+      while (Serial.available() > 0) {
+        Serial.read();
+      }
+      Serial.println("Ignoring unexpected message, dumping buffer...");
+    } 
     //if (digi_zero == 0){ // Stop if switch is activated
     //  Serial.println("Switch Pin hit endpoint found...");
     //  break;
@@ -90,7 +101,6 @@ float ZeroCal() {
     delay(WaitTimeSpeed);
     digitalWrite(StepPin, LOW);
     delay(WaitTimeSpeed);
-    if (Serial.read() == 90) break; // Stop if 'Z' is received
   }
   return 0;
 }
@@ -143,9 +153,18 @@ void SetPos(float &realX, float fakeX) {
 
     int anal_pos = analogRead(AnalogSwitchPin);
 
-    if (Serial.read() == 90){ // Stop if 'Z' is received
+    int incoming = Serial.read();
+    if (incoming == 90){ // Stop if 'Z' is received
        Serial.println("Z received stopping movement..."); 
        break;
+    }
+    // If we got *some* other character (not -1), ignore it and dump the buffer
+    else if (incoming != -1) {
+      // Dump any extra characters waiting in the buffer
+      while (Serial.available() > 0) {
+        Serial.read();
+      }
+      Serial.println("Ignoring unexpected message, dumping buffer...");
     }
     /*
     if (digitalRead(SwitchPin) == 0){ // Stop if switch is activated
@@ -223,6 +242,32 @@ void loop() {
     //Serial.println(incomingByte);
     //delay(100);
 
+    //Move calibration source seromotor
+    if (incomingByte == 76) { // 'L' command
+      int anglePos=0;
+      Serial.println("Write Servo Position (1, 2, 3 or 4)");
+      while (anglePos==0){
+        anglePos = Serial.readString().toInt();
+      }
+      int angle=-1;
+      if (anglePos==1){angle=0;}
+      else if (anglePos==2){angle=60;}
+      else if (anglePos==3){angle=125;}
+      else if (anglePos==4){angle=270;}
+      else {
+        Serial.println("Insert a valid position");
+        return;
+      }
+      myServo.attach(9, 500, 2500);
+      myServo.write(angle);
+      delay(1000);
+      Serial.print("Servo moved to Pos");
+      Serial.print(anglePos);
+      Serial.print(" i.e. angle ");
+      Serial.println(angle);
+      myServo.detach();
+    }
+
     //Software reset the board
     if (incomingByte == 75) { // 'K' command
       Serial.println("Resetting Arduinio...");
@@ -256,7 +301,7 @@ void loop() {
       // Initially ecite relays and enable the driver
       Serial.println("Excite relays...");
       relayStatus=ExciteRelays();
-      delay(5000);
+      delay(2000);
       //digitalWrite(enablePin, LOW);
       //delay(2000);
       //start calibtion
@@ -267,7 +312,7 @@ void loop() {
       Serial.println("Dexcite relays...");
       delay(100);
       relayStatus=DexciteRelays();
-      delay(5000);
+      delay(2000);
       //digitalWrite(enablePin, HIGH);
       //delay(2000);
       Serial.println("Calibration Done!");
@@ -335,7 +380,7 @@ void loop() {
         // Initially ecite relays and enable the driver
         Serial.println("Excite relays...");
         relayStatus=ExciteRelays();
-        delay(5000);
+        delay(2000);
         //digitalWrite(enablePin, LOW);
         //delay(3000);
         //start moving
@@ -345,7 +390,7 @@ void loop() {
         Serial.println("Dexcite relays...");
         delay(100);
         relayStatus=DexciteRelays();
-        delay(5000);
+        delay(2000);
         //digitalWrite(enablePin, HIGH);
         //delay(2000);
         Serial.print("Actual Position in Mm is: ");

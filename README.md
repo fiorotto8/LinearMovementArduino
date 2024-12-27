@@ -18,6 +18,7 @@ Send a byte through serial port to Arduino
 - **T**: Excite the Relays to connect the Motor power supply to the 220V
 - **U**: Dexcite the Relays to disconnect the Motor power supply to the 220V
 - **S**: Get Relays status
+- **L**: Set the Source holder Servomotor position. After that a prompt will ask you the position: 4 positions are possible where pos1 correspond to angle 0° and pos4 to angle 270°
 
 ## TPH sensor
 

@@ -1,6 +1,6 @@
 # Moving stage for Source and TPH sensor
 
-![Basic electrical Schetch](Schetch_bb.png)
+![alt text](Schetch_bb.png)
 NB: the image of the AA battery pack is referred to the 24V DC power supply!
 
 ## Basic instructions
@@ -60,15 +60,14 @@ To enter in the vacuum vessel we used some connector with 15 pins. Here the mapp
 | 2      | <span style="color:blue">2A</span>       |
 | 3      | 1B       |
 | 4      | <span style="color:red">2B</span>       |
-| 5      | Switch Ground       |
-| 6      | Switch -       |
-| 7      | VCC 5V (BME680)       |
-| 8      | GND (BME 680)      |
-| 9      | NC       |
-| 10      | NC       |
-| 11     | NC       |
-| 12      | NC       |
-| 13      | Switch +       |
-| 14      | SCL       |
-| 15      | SDA       |
-
+| 5      | Switch -       |
+| 6      | Switch Ground       |
+| 7      | Switch +       |
+| 8      | NC      |
+| 9      | VCC 5V (Servo)       |
+| 10      | GND (Servo)       |
+| 11     | Servo Controller       |
+| 12      |  GND (BME 680)      |
+| 13      | VCC 5V (BME680)       |
+| 14      | SDA       |
+| 15      | SCL       |

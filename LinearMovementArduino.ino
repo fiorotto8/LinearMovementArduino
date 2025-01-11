@@ -16,6 +16,7 @@ const int relay1Pin = 10;    // Relay 1 pin
 const int relay2Pin = 11;    // Relay 2 pin
 
 Servo myServo;
+int periodTimeout=5000;
 
 bool relayStatus;
 
@@ -65,7 +66,7 @@ float ZeroCal() {
     int incoming = Serial.read();
     if (incoming == 90){ // Stop if 'Z' is received
        Serial.println("Z received stopping calibration..."); 
-       break;
+       return 0;
     }
       // If we got *some* other character (not -1), ignore it and dump the buffer
     else if (incoming != -1) {
@@ -102,7 +103,7 @@ float ZeroCal() {
     digitalWrite(StepPin, LOW);
     delay(WaitTimeSpeed);
   }
-  return 0;
+  return 1;
 }
 
 // Function to return the current position of the motor
@@ -111,7 +112,7 @@ float getXPos() {
 }
 
 // Function to move the motor to a specified position
-void SetPos(float &realX, float fakeX) {
+int SetPos(float &realX, float fakeX) {
   float diffX; // Difference between current and target position
   int stepsToDo = 0; // Number of steps to move
   diffX = fakeX - realX; // Calculate the difference in position
@@ -119,11 +120,11 @@ void SetPos(float &realX, float fakeX) {
   // Check for boundary conditions
   if (fakeX > 110 || fakeX < 0) {
     Serial.println("Impossible movement");
-    return;
+    return 6;
   }
   else if (fakeX == 0){
     Serial.println("To go to 0 position use Cal function instead");
-    return;
+    return 7;
   }
 
   // Set motor direction based on the position difference
@@ -131,7 +132,7 @@ void SetPos(float &realX, float fakeX) {
   else if (diffX > 0) digitalWrite(DirPin, LOW);
   else if (diffX == 0) {
     Serial.println("Already in position");
-    return;
+    return 0;
   }
 
   stepsToDo = abs(diffX * StepForMm); // Convert position difference to steps
@@ -156,7 +157,7 @@ void SetPos(float &realX, float fakeX) {
     int incoming = Serial.read();
     if (incoming == 90){ // Stop if 'Z' is received
        Serial.println("Z received stopping movement..."); 
-       break;
+       return 8;
     }
     // If we got *some* other character (not -1), ignore it and dump the buffer
     else if (incoming != -1) {
@@ -192,6 +193,7 @@ void SetPos(float &realX, float fakeX) {
   if (diffX < 0) temp = temp - nvm;
   else if (diffX > 0) temp = temp + nvm;
   realX = temp;
+  return 0;
 }
 
 // Initialization of BME680 sensor
@@ -242,12 +244,20 @@ void loop() {
     //Serial.println(incomingByte);
     //delay(100);
 
-    //Move calibration source seromotor
+    //Move source servomotor
     if (incomingByte == 76) { // 'L' command
       int anglePos=0;
       Serial.println("Write Servo Position (1, 2, 3 or 4)");
+      unsigned long startMillis=millis();
+      unsigned long currentMillis=millis();
       while (anglePos==0){
         anglePos = Serial.readString().toInt();
+        currentMillis=millis();
+        if ((currentMillis-startMillis)>periodTimeout){
+          Serial.println("Timeout for Servo positioning");
+          Serial.println("E4");
+          return;
+        }
       }
       int angle=-1;
       if (anglePos==1){angle=0;}
@@ -255,7 +265,8 @@ void loop() {
       else if (anglePos==3){angle=125;}
       else if (anglePos==4){angle=270;}
       else {
-        Serial.println("Insert a valid position");
+        Serial.println("Servo position invalid");
+        Serial.println("E3");
         return;
       }
       myServo.attach(9, 500, 2500);
@@ -266,14 +277,15 @@ void loop() {
       Serial.print(" i.e. angle ");
       Serial.println(angle);
       myServo.detach();
+      Serial.println("E0");
     }
 
     //Software reset the board
     if (incomingByte == 75) { // 'K' command
       Serial.println("Resetting Arduinio...");
+      Serial.println("E0");
       delay(100);
       Reset();
-      Serial.println("PANDA");
     }    
 
     // Handle BME sensor reading
@@ -295,7 +307,7 @@ void loop() {
       Serial.print(bme.humidity);
       Serial.print(";");
       Serial.println(bme.gas_resistance);
-      Serial.println("PANDA");
+      Serial.println("E0");
     }
 
     // Handle calibration
@@ -308,71 +320,80 @@ void loop() {
       //delay(2000);
       //start calibtion
       Serial.println("Calibrating...");
-      xPos = ZeroCal();
-      CalDone = 1;
+      //xPos = ZeroCal();
+      //CalDone = 1;
+
+      CalDone = ZeroCal();
       // Disable the driver and deectire realys
       Serial.println("Dexcite relays...");
       delay(100);
       relayStatus=DexciteRelays();
       delay(2000);
-      //digitalWrite(enablePin, HIGH);
-      //delay(2000);
-      Serial.println("Calibration Done!");
-      Serial.println("PANDA");
+      if (CalDone == 1){
+        xPos=0;
+        Serial.println("Calibration Done!");
+        Serial.println("E0");
+      }
+      else{
+        Serial.println("Calibration Interrupted!");
+        Serial.println("E2");
+      }
     }
 
     // Position check
     if (incomingByte == 71) { // 'G' command
       Serial.print("Current position: ");
       Serial.println(getXPos());
-      Serial.println("PANDA");
+      Serial.println("E0");
     }
 
     // Realy Status check
     if (incomingByte == 77) { // 'M' command
       Serial.print("Relays excited: ");
       Serial.println(relayStatus);
-      Serial.println("PANDA");
+      Serial.println("E0");
     }
 
     // Check if calibration has been done
     if (incomingByte == 89) { // 'Y' command
       Serial.print("Calibration: ");
       Serial.println(CalDone);
-      Serial.println("PANDA");
+      Serial.println("E0");
     }
 
     // Identify device
     if (incomingByte == 87) { // 'W' command
       Serial.println("KEG");
-      Serial.println("PANDA");
+      Serial.println("E0");
     }
 
     // Get Relays Status
     if (incomingByte == 83) { // 'S' command
       Serial.print("Relays are: ");
       Serial.println(relayStatus);
-      Serial.println("PANDA");
+      Serial.println("E0");
     }
 
     // Excite relays
     if (incomingByte == 84) { // 'T' command
       Serial.print("Relays excited ");
       Serial.println(relayStatus=ExciteRelays());
-      Serial.println("PANDA");
+      Serial.println("E0");
     }
 
     // Dexcite relays
     if (incomingByte == 85) { // 'U' command
       Serial.print("Relays deexcited ");
       Serial.println(relayStatus=DexciteRelays());
-      Serial.println("PANDA");
+      Serial.println("E0");
     }
 
     // Movement command
     if (incomingByte == 80) { // 'P' command
+      int err;
       if (CalDone == 0) {
         Serial.println("Calibration not done, I will not move!");
+        Serial.println("E1");
         return;
       }
       else{
@@ -380,8 +401,16 @@ void loop() {
         float pos = 0;
         Serial.println("Write position");
         // Wait for a valid position input
+        unsigned long startMillis=millis();
+        unsigned long currentMillis=millis();
         while (pos == 0) {
           pos = Serial.readString().toFloat();
+          currentMillis=millis();
+          if ((currentMillis-startMillis)>periodTimeout){
+            Serial.println("Timeout for Stepper positioning");
+            Serial.println("E5");
+            return;      
+          }  
         }
         Serial.print("Selected Position mm should be: ");
         Serial.println(pos);
@@ -395,7 +424,7 @@ void loop() {
         //delay(3000);
         //start moving
         Serial.println("Moving...");
-        SetPos(xPos, pos); // Move to the specified position
+        err=SetPos(xPos, pos); // Move to the specified position
         // Disable the driver and deectire realys
         Serial.println("Dexcite relays...");
         delay(100);
@@ -408,7 +437,8 @@ void loop() {
       }
       // Add a small delay for stability
       delay(100);
-      Serial.println("PANDA");
+      Serial.print("E");
+      Serial.println(String(err));
     }
   }
 

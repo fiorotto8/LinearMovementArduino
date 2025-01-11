@@ -14,11 +14,22 @@ Send a byte through serial port to Arduino
 - **W**: To return the detector where the Arduino is connected (KEG or MANGOlino)
 - **Y**: Return if the calibration has already been done
 - **K**: Reset the Arduino, equivalent to click the reset button
-- **E**: Get the status of the ENABLE pin (should be 1 when it is OFF i.e. almost everytime)
 - **T**: Excite the Relays to connect the Motor power supply to the 220V
 - **U**: Dexcite the Relays to disconnect the Motor power supply to the 220V
 - **S**: Get Relays status
 - **L**: Set the Source holder Servomotor position. After that a prompt will ask you the position: 4 positions are possible where pos1 correspond to angle 0° and pos4 to angle 270°
+
+The Arduino will print a lot of stuff on the Serial, however only when a return code, *E followed b a number* is given an operaation is finished:
+
+- **E0**: no error, operation completed succesfully
+- **E1**: "Calibration not done, I will not move!" if the P command is sent before the calibration
+- **E2**: Calibratioin interrupted by Z command
+- **E3**: During servo positioning a wrong poition was given
+- **E4**: Timeout during servo positioning
+- **E5**: Timeout during stepper positioning
+- **E6**: Impossible movement for the stepper, negative position of greater than 110
+- **E7**: P0 is not allowed use Calibration instead
+- **E8**: position movement stopped by Z command
 
 ## TPH sensor
 

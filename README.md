@@ -30,6 +30,7 @@ The Arduino will print a lot of stuff on the Serial, however only when a return 
 - **E6**: Impossible movement for the stepper, negative position of greater than 110
 - **E7**: P0 is not allowed use Calibration instead
 - **E8**: position movement stopped by Z command
+- **E9**: 'Z' command received when no operation was ongoing
 
 ## TPH sensor
 

@@ -347,6 +347,13 @@ void loop() {
       Serial.println("E0");
     }
 
+    // fake 'Z' press
+    if (incomingByte == 90) { //'Z' command}
+      Serial.println("Z received for no reason");
+      Serial.println("E9");
+    }
+
+
     // Realy Status check
     if (incomingByte == 77) { // 'M' command
       Serial.print("Relays excited: ");

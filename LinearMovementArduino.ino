@@ -94,7 +94,7 @@ float ZeroCal() {
   delay(100);
 
   // Move motor away from the switch to a specified offset
-  float diffX = 5.5; // Offset distance in mm
+  float diffX = 4.5; // Offset distance in mm
   int stepsToDo = abs(diffX * StepForMm); // Convert offset to steps
   digitalWrite(DirPin, LOW); // Change direction
   for (int i = 0; i < stepsToDo; i++) {
@@ -118,7 +118,7 @@ int SetPos(float &realX, float fakeX) {
   diffX = fakeX - realX; // Calculate the difference in position
 
   // Check for boundary conditions
-  if (fakeX > 110 || fakeX < 0) {
+  if (fakeX > 120 || fakeX < 0) {
     Serial.println("Impossible movement");
     return 6;
   }
@@ -219,12 +219,12 @@ void setup() {
     //while (1); // Uncomment to halt if sensor is not found
   }
 
-  // Set up oversampling and filter initialization for BME680
-  bme.setTemperatureOversampling(BME680_OS_8X);
-  bme.setHumidityOversampling(BME680_OS_2X);
-  bme.setPressureOversampling(BME680_OS_4X);
-  bme.setIIRFilterSize(BME680_FILTER_SIZE_3);
-  bme.setGasHeater(320, 150); // Set heater temperature and duration
+  // Set up maximum oversampling and filter for highest precision on BME680
+  bme.setTemperatureOversampling(BME680_OS_16X);
+  bme.setHumidityOversampling(BME680_OS_16X);
+  bme.setPressureOversampling(BME680_OS_16X);
+  bme.setIIRFilterSize(BME680_FILTER_SIZE_7); // Largest filter size for best noise reduction
+  bme.setGasHeater(400, 300); // Highest heater temp and longest duration for most stable gas readings
 
   //Deexcite realys!
   relayStatus=DexciteRelays();
@@ -262,8 +262,8 @@ void loop() {
       int angle=-1;
       if (anglePos==1){angle=0;}
       else if (anglePos==2){angle=60;}
-      else if (anglePos==3){angle=125;}
-      else if (anglePos==4){angle=270;}
+      else if (anglePos==3){angle=120;}
+      else if (anglePos==4){angle=250;}
       else {
         Serial.println("Servo position invalid");
         Serial.println("E3");
